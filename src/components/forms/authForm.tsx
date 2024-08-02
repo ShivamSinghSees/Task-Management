@@ -60,18 +60,17 @@ const AuthForm = ({ mode }: Props) => {
         name,
         role: "AGENCY_OWNER",
       })) as User;
-      console.log(response, "responseresponseresponseresponse");
-      // signIn("credentials", {
-      //   email: response.email,
-      //   password: response.password,
-      // });
-      // router.refresh();
+      signIn("credentials", {
+        email: response.email,
+        password: response.password,
+      });
+      router.refresh();
     } else {
       signIn("credentials", {
         email: values.email,
         password: values.password,
       });
-      // router.refresh();
+      router.refresh();
     }
   };
 
