@@ -3,8 +3,10 @@ import { User } from "@prisma/client";
 import NextAuth from "next-auth";
 import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
+// import { PrismaAdapter } from "@next-auth/prisma-adapter";
 
 const handler = NextAuth({
+  // adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
@@ -25,6 +27,10 @@ const handler = NextAuth({
             email: credentials?.email,
             password: credentials?.password,
           })) as User;
+          console.log(
+            response,
+            "kopl================================================================"
+          );
         }
         if (response) {
           return {

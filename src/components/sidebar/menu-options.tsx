@@ -22,26 +22,27 @@ import {
 } from "@/components/ui/command";
 import Plus from "../icons/plus";
 import IconRenderer from "../IconRender";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useAppSelector } from "@/store/hook";
 import { redirect } from "next/navigation";
 import { useSheet } from "@/lib/SheetContext";
 interface Props {
-  user: User;
   defaultOpen?: boolean;
   showX: boolean;
 }
 
-const MenuOptions = ({ defaultOpen, user, showX }: Props) => {
+const MenuOptions = ({ defaultOpen, showX }: Props) => {
   const [isMounted, setIsMounted] = useState(false);
   const sideBarOptions = useAppSelector((state) => state.sidebar.sidebar);
+  const session = useSession();
+  console.log(session, "session.token");
+  let user = session?.data?.user as User;
+
   const openState = useMemo(
     () => (defaultOpen ? { open: true } : {}),
     [defaultOpen]
   );
   const { openSheet } = useSheet();
-
-  // if (!user) redirect("/sign-in");
 
   const logOut = () => {
     signOut();
@@ -51,6 +52,7 @@ const MenuOptions = ({ defaultOpen, user, showX }: Props) => {
     setIsMounted(true);
   }, []);
 
+  if (!user && session.status !== "loading") redirect("/sign-in");
   if (!isMounted) return;
   return (
     <Sheet {...openState} modal={false}>
