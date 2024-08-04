@@ -1,3 +1,4 @@
+import { SideBarState } from "@/lib/type";
 import { createSlice } from "@reduxjs/toolkit";
 const initialState: SideBarState = {
   sidebar: [

@@ -1,3 +1,4 @@
+import { FeatureState } from "@/lib/type";
 import { createSlice } from "@reduxjs/toolkit";
 const initialState: FeatureState = {
   feature: [
