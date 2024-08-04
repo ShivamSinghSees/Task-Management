@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -22,10 +22,12 @@ import {
   FormMessage,
 } from "../ui/form";
 // import { signIn, signUp } from "@/store/slices/authSlice";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { initUser } from "@/lib/queries";
 import { User } from "@prisma/client";
+import { Flag, Loader2 } from "lucide-react";
+
 type Props = {
   mode: string;
 };
@@ -43,7 +45,7 @@ const AuthForm = ({ mode }: Props) => {
       .min(6, { message: "password must be atleast 6 chars" }),
   });
 
-  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     mode: "onChange",
@@ -52,25 +54,30 @@ const AuthForm = ({ mode }: Props) => {
   const { formState } = form;
 
   const onSubmit = async (values: z.infer<typeof FormSchema>) => {
-    if (mode === "signUp") {
-      let name = values.name as string;
-      const response = (await initUser({
-        email: values.email,
-        password: values.password,
-        name,
-        role: "AGENCY_OWNER",
-      })) as User;
-      signIn("credentials", {
-        email: response.email,
-        password: response.password,
-      });
-      router.refresh();
-    } else {
-      signIn("credentials", {
-        email: values.email,
-        password: values.password,
-      });
-      router.refresh();
+    setLoading(true);
+    try {
+      if (mode === "signUp") {
+        let name = values.name as string;
+        const response = (await initUser({
+          email: values.email,
+          password: values.password,
+          name,
+          role: "AGENCY_OWNER",
+        })) as User;
+        let res = await signIn("credentials", {
+          email: response.email,
+          password: response.password,
+        });
+      } else {
+        let res = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,14 +142,13 @@ const AuthForm = ({ mode }: Props) => {
             </CardContent>
             <CardFooter className="md:px-14 flex-col gap-3 items-center  ">
               <Button
-                variant={
-                  formState.isValid
-                    ? "blueActiveGradient"
-                    : "blueDisableGradient"
-                }
+                disabled={!formState.isValid || loading}
+                variant={"blueActiveGradient"}
                 className="w-full"
                 type="submit"
               >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {/* <Loader2 className="mr-2 h-4 w-4 animate-spin" /> */}
                 {mode === "signUp" ? "Sign up" : "Login"}
               </Button>
               {mode === "signUp" ? (

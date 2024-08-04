@@ -1,8 +1,10 @@
 import React from "react";
 
-const Cross = () => {
+const Cross = ({ click }: { click: () => void }) => {
   return (
     <svg
+      className="cursor-pointer"
+      onClick={click}
       width="24"
       height="24"
       viewBox="0 0 24 24"

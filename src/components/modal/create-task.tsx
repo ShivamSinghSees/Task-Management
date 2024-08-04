@@ -1,11 +1,11 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSheet } from "@/lib/SheetContext";
 import Cross from "../icons/cross";
 import TwoSidedArrow from "../icons/two-sided-arrow";
 import { Button } from "../ui/button";
-import { CalendarIcon, Pencil, Share2 } from "lucide-react";
+import { CalendarIcon, Loader2, Pencil, Share2 } from "lucide-react";
 import AuthInput from "../authInput";
 import {
   DropdownMenu,
@@ -29,13 +29,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Calendar } from "../ui/calendar";
-import { format, formatDate, formatDistance } from "date-fns";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { upsertTask } from "@/lib/queries";
+import { useSession } from "next-auth/react";
+import { Session } from "next-auth";
+import { v4 as uuidv4 } from "uuid";
+import { CustomSession } from "@/lib/type";
+import { upsertTaskAsync } from "@/store/slices/taskSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
 
 const FormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   status: z.string().min(1, "Status is required"),
-  priority: z.string().optional(),
+  priority: z.enum(["Urgent", "Medium", "Low"]).optional(),
   deadline: z
     .date({
       required_error: "A deadline is required.",
@@ -45,44 +52,55 @@ const FormSchema = z.object({
 });
 
 function CreateTask() {
+  const { data: session } = useSession() as { data: CustomSession | null };
   const { isOpen, closeSheet } = useSheet();
+  const { isLoading } = useAppSelector((state) => state.task);
+  const dispatch = useAppDispatch();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       title: "",
       status: "",
-      priority: "",
+      priority: "Medium",
       description: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof FormSchema>) {
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof FormSchema>) {
+    await dispatch(
+      upsertTaskAsync({
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: session?.user?.id as string,
+        ...values,
+      })
+    );
+    closeSheet();
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Sheet
-          open={isOpen}
-          onOpenChange={(open) => {
-            if (!open) closeSheet();
-          }}
-        >
-          <SheetContent className="min-w-[36rem]">
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) closeSheet();
+      }}
+    >
+      <SheetContent className="min-w-[36rem]">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="flex justify-between items-center ">
               <div className="flex gap-5">
-                <Cross /> <TwoSidedArrow />
+                <Cross click={closeSheet} /> <TwoSidedArrow />
               </div>
               <div className="flex gap-3">
                 <Button
                   type="submit"
-                  variant={
-                    form.formState.isValid
-                      ? "blueActiveGradient"
-                      : "blueDisableGradient"
-                  }
+                  variant={"blueActiveGradient"}
+                  disabled={!form.formState.isValid}
                 >
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}{" "}
                   Save
                 </Button>
                 <Button className="text-[#797979] bg-[#F4F4F4] border-none text-sm">
@@ -100,14 +118,13 @@ function CreateTask() {
                     <AuthInput
                       {...field}
                       placeholder="Title"
-                      className="mt-10 text-[40px] focus-visible:ring-0 border-none text-[#CCCCCC] bg-transparent px-0"
+                      className="mt-10 text-[40px] focus-visible:ring-0 border-none text-[#64758b] bg-transparent px-0"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="status"
@@ -202,7 +219,7 @@ function CreateTask() {
                           {field.value ? (
                             format(field.value, "PPP")
                           ) : (
-                            <span>Pick a date</span>
+                            <span>Deadline</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -241,10 +258,10 @@ function CreateTask() {
                 </FormItem>
               )}
             />
-          </SheetContent>
-        </Sheet>
-      </form>
-    </Form>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
   );
 }
 

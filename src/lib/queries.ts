@@ -1,7 +1,8 @@
 "use server";
 
-import { User } from "@prisma/client";
+import { Task, User } from "@prisma/client";
 import db from "./prisma";
+import { transformData } from "./utils";
 
 function returnErrorMessage(err: unknown) {
   if (err instanceof Error) {
@@ -45,6 +46,37 @@ export const signIn = async (credentials: {
     if (user) {
       return user;
     }
+  } catch (error) {
+    return returnErrorMessage(error);
+  }
+};
+
+export const upsertTask = async (task: Partial<Task>) => {
+  try {
+    if (task.id) {
+      return await db.task.update({
+        where: { id: task.id },
+        data: task,
+      });
+    } else {
+      return await db.task.create({
+        data: task as Task,
+      });
+    }
+  } catch (error) {
+    return returnErrorMessage(error);
+  }
+};
+
+export const getTasks = async (userId: string) => {
+  try {
+    const tasks = await db.task.findMany({
+      where: {
+        userId: userId,
+      },
+    });
+
+    return transformData(tasks);
   } catch (error) {
     return returnErrorMessage(error);
   }

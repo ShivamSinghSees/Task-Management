@@ -26,6 +26,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useAppSelector } from "@/store/hook";
 import { redirect } from "next/navigation";
 import { useSheet } from "@/lib/SheetContext";
+import { User } from "next-auth";
 interface Props {
   defaultOpen?: boolean;
   showX: boolean;
@@ -35,7 +36,6 @@ const MenuOptions = ({ defaultOpen, showX }: Props) => {
   const [isMounted, setIsMounted] = useState(false);
   const sideBarOptions = useAppSelector((state) => state.sidebar.sidebar);
   const session = useSession();
-  console.log(session, "session.token");
   let user = session?.data?.user as User;
 
   const openState = useMemo(
@@ -120,18 +120,20 @@ const MenuOptions = ({ defaultOpen, showX }: Props) => {
         <Command className="mt-5 h-fit">
           <CommandList>
             <CommandGroup>
-              {sideBarOptions.map((options, i) => {
-                return (
-                  <CommandItem
-                    key={i}
-                    className="gap-5 px-0 text-[#797979]  hover:bg-[red] aria-selected:border-[#DDDDDD] aria-selected:border-[1px] pl-2"
-                  >
-                    {" "}
-                    <IconRenderer icon={options.icon} />
-                    <span className="text-[16px]"> {options.name} </span>{" "}
-                  </CommandItem>
-                );
-              })}
+              {sideBarOptions.map(
+                (options: { icon: string; name: string }, i: number) => {
+                  return (
+                    <CommandItem
+                      key={i}
+                      className="gap-5 px-0 text-[#797979]  hover:bg-[red] aria-selected:border-[#DDDDDD] aria-selected:border-[1px] pl-2"
+                    >
+                      {" "}
+                      <IconRenderer icon={options.icon} />
+                      <span className="text-[16px]"> {options.name} </span>{" "}
+                    </CommandItem>
+                  );
+                }
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

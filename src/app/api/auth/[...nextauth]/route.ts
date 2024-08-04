@@ -3,15 +3,14 @@ import { User } from "@prisma/client";
 import NextAuth from "next-auth";
 import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
-// import { PrismaAdapter } from "@next-auth/prisma-adapter";
 
 const handler = NextAuth({
-  // adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
   pages: {
     signIn: "/sign-in",
+    // signUp: "/sign-un",
   },
   providers: [
     CredentialsProvider({
@@ -27,16 +26,12 @@ const handler = NextAuth({
             email: credentials?.email,
             password: credentials?.password,
           })) as User;
-          console.log(
-            response,
-            "kopl================================================================"
-          );
         }
         if (response) {
           return {
             name: response.name,
             email: response.email,
-            id: "null",
+            id: response.id,
             image: response.role,
             role: response.role,
           };
@@ -50,17 +45,15 @@ const handler = NextAuth({
       console.log(user);
       if (user) {
         token.role = user.role;
+        token.user_id = user.id;
       }
       return token;
     },
     async session({ session, token }: { session: any; token: JWT }) {
-      console.log(token, "token");
-      console.log(session, "sksb");
-      session.role = token?.role;
+      // console.log(token, "token");
       // console.log(session, "sksb");
-      // if (session.user) {
-      //   session.user.id = token.id as string;
-      // }
+      session.role = token?.role;
+      session.user.id = token.user_id as string;
       return session;
     },
   },

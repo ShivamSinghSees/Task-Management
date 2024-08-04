@@ -58,14 +58,13 @@ let features = [
 
 const Home = async () => {
   const session = await getServerSession();
-  console.log(session, "session server");
   const user = session?.user;
   if (!user) return;
   return (
     <div className="py-6 px-4 bg-[#f7f7f7] h-[100vh] flex flex-col gap-5 ">
       <div className="flex justify-between items-center ">
         <h1 className=" text-[1.3rem] md:text-3xl lg:text-4xl font-semibold	 ">
-          Good morning, {user?.name?.split(" ")[0]}! | {session.user?.image}
+          Good morning, {user?.name?.split(" ")[0]}!
         </h1>
         <span className="text-sm flex items-center gap-2 ">
           Help & feedback <Question />{" "}
@@ -122,13 +121,13 @@ const Home = async () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant={"blueActiveGradient"}>
+          <Button variant={"blueActiveGradient"} disabled>
             {" "}
             Create new <Plus className="ml-3" />{" "}
           </Button>
         </div>
       </div>
-      <Tasks user={session} />
+      <Tasks />
     </div>
   );
 };

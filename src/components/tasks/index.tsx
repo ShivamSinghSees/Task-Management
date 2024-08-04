@@ -6,103 +6,15 @@ import TaskCard from "../card/task-card";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { useSession } from "next-auth/react";
 import { transformData } from "@/lib/utils";
+import { getTasks, upsertTask } from "@/lib/queries";
+import { Session } from "next-auth";
+import { CustomSession, TaskGroup } from "@/lib/type";
 
-type Props = {
-  user: any;
-};
-
-// const initialColumns: Column[] = [
-//   {
-//     id: "column-1",
-//     title: "To Do",
-//     tasks: [
-//       {
-//         id: "task-1",
-//         title: "Task 1",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "urgent",
-//       },
-//       {
-//         id: "task-2",
-//         title: "Task 1",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "low",
-//       },
-//       {
-//         id: "task-3",
-//         title: "Task 1",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "medium",
-//       },
-//     ],
-//   },
-//   {
-//     id: "column-2",
-//     title: "In progress",
-//     tasks: [
-//       {
-//         id: "task-4",
-//         title: "Task priii",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "urgent",
-//       },
-//       {
-//         id: "task-5",
-//         title: "Task Success",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "low",
-//       },
-//       {
-//         id: "task-6",
-//         title: "Task Random",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "medium",
-//       },
-//     ],
-//   },
-//   {
-//     id: "column-3",
-//     title: "Under review",
-//     tasks: [
-//       {
-//         id: "task-7",
-//         title: "Task seven",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "urgent",
-//       },
-//     ],
-//   },
-//   {
-//     id: "column-4",
-//     title: "Finished",
-//     tasks: [
-//       {
-//         id: "task-8",
-//         title: "Task seven",
-//         description:
-//           "Develop and integrate user authentication using email and password.",
-//         priority: "urgent",
-//       },
-//     ],
-//   },
-// ];
-
-const Tasks = ({ user }: Props) => {
+const Tasks = () => {
   const [columns, setColumns] = useState<TaskGroup[]>();
-  const session = useSession();
-  console.log(session, "session");
+  const { data: session } = useSession() as { data: CustomSession | null };
 
   const onDragEnd = async (result: any) => {
-    if (window.navigator.vibrate) {
-      window.navigator.vibrate(100);
-    }
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -132,15 +44,10 @@ const Tasks = ({ user }: Props) => {
         })
       );
       const movedTaskID = removed.id;
-      // await api.patch(
-      //   `/tasks/${movedTaskID}`,
-      //   { status: destColumn!.status },
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${session.data?.user?.image}`,
-      //     },
-      //   }
-      // );
+      await upsertTask({
+        id: movedTaskID,
+        status: destColumn!.status,
+      });
     } else {
       const column = columns?.find((col) => col.id === source.droppableId);
       const copiedItems = [...column!.tasks];
@@ -149,9 +56,6 @@ const Tasks = ({ user }: Props) => {
 
       // Get the title of the reordered task
       const reorderedTaskTitle = removed.title;
-      console.log(
-        `Task "${reorderedTaskTitle}" reordered within ${column!.status}`
-      );
 
       setColumns(
         columns?.map((col) => {
@@ -165,17 +69,10 @@ const Tasks = ({ user }: Props) => {
   };
   useEffect(() => {
     async function getTask() {
-      if (session.data?.user?.image) {
-        localStorage.setItem("token", session.data?.user?.image as string);
+      let tasks = await getTasks(session?.user.id as string);
+      if (typeof tasks !== "string") {
+        setColumns(tasks);
       }
-      let token = localStorage.getItem("token");
-      // const response = await api.get("/tasks", {
-      //   headers: {
-      //     Authorization: `Bearer ${token || session.data?.user?.image}`,
-      //   },
-      // });
-      // let data = transformData(response.data as OriginalTask[]);
-      // setColumns(data);
     }
     getTask();
   }, []);
@@ -191,7 +88,7 @@ const Tasks = ({ user }: Props) => {
                 <LeftMenu />
               </div>
               <Droppable droppableId={column.id}>
-                {(provided, snapshot) => (
+                {(provided) => (
                   <div
                     {...provided.droppableProps}
                     ref={provided.innerRef}
@@ -203,16 +100,13 @@ const Tasks = ({ user }: Props) => {
                         draggableId={task.id}
                         index={index}
                       >
-                        {(provided, snapshot) => (
+                        {(provided) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <TaskCard
-                              priority={task.priority as Priority}
-                              key={index}
-                            />
+                            <TaskCard task={task} key={index} />
                           </div>
                         )}
                       </Draggable>
@@ -229,23 +123,3 @@ const Tasks = ({ user }: Props) => {
 };
 
 export default Tasks;
-
-{
-  /* <div className="min-h-[55%] bg-white rounded-lg flex w-full p-4 pt-0 overflow-hidden relative gap-4 ">
-  {taskColumns.map((column, key) => {
-    return (
-      <div className=" w-[24%]" key={key}>
-        <div className="flex justify-between sticky top-[-8px] bg-white py-3 ">
-          <span> {column.name} </span>
-          <LeftMenu />
-        </div>
-        <div className=" flex flex-col gap-3 h-[90%] overflow-scroll ">
-          {column.tasks.map((priority, key) => {
-            return <TaskCard priority={priority as Priority} key={key} />;
-          })}
-        </div>
-      </div>
-    );
-  })}
-</div>; */
-}
